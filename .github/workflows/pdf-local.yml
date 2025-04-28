@@ -36,6 +36,7 @@ jobs:
             -v "${{ github.workspace }}/images/pdf-cover.pdf":/home/node/resources/cover.pdf:rw \
             --user $(id -u):$(id -g) \
             -e "PDF_OUTPUT_NAME=guide-nlesc.pdf" \
+            -e "NO_SANDBOX=true" \
             ghcr.io/kernoeb/docker-docsify-pdf:main
 
       - name: Upload PDF as an artifact
