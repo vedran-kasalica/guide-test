@@ -1,0 +1,46 @@
+name: Generate PDF
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - pdf-guide-fix
+  release:
+    types: [published]
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Change absolute paths to relative
+        run: perl -pi -e 's@\]\(\/@\]\(@' _sidebar.md
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install uploader
+        run: npm install @iomeg/zenodo-upload
+
+      - name: Pull Docker image
+        run: docker pull ghcr.io/kernoeb/docker-docsify-pdf:latest
+
+      - name: Generate PDF using the Docker image
+        run: |
+          docker run --rm --privileged \
+            -v "${{ github.workspace }}/":/home/node/docs:rw \
+            -v "${{ github.workspace }}/":/home/node/pdf:rw \
+            -v "${{ github.workspace }}/images/pdf-cover.pdf":/home/node/resources/cover.pdf:rw \
+            --user $(id -u):$(id -g) \
+            -e "PDF_OUTPUT_NAME=guide-nlesc.pdf" \
+            ghcr.io/kernoeb/docker-docsify-pdf:latest
+
+      - name: Upload PDF as an artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-pdf
+          path: guide-nlesc.pdf
